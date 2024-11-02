@@ -33,6 +33,7 @@ public class RandomImageDisplay : MonoBehaviour
             return;
         }
 
+
         selfAudio = GetComponent<AudioSource>();
 
         planeMaterial = GetComponent<Renderer>().material;
@@ -75,9 +76,7 @@ public class RandomImageDisplay : MonoBehaviour
             planeMaterial.SetTexture("_MainTex", selectedTexture); // für Albedo/Base Map
             planeMaterial.SetTexture("_BaseMap", selectedTexture); // Alternative für URP/HDRP Shader
 
-            // Proportionen des Bildes berechnen und Plane skalieren
-            float aspectRatio = (float)selectedTexture.width / selectedTexture.height;
-            transform.localScale = new Vector3(originalScale.y * aspectRatio / 5f, originalScale.y, originalScale.z);
+            setImageScale(selectedTexture);
 
             // Abspielen des zugehörigen Audio-Clips
             if (selfAudio != null && moodAudioClips.Length > currentIndex)
@@ -86,5 +85,11 @@ public class RandomImageDisplay : MonoBehaviour
                 selfAudio.Play();
             }
         }
+    }
+
+    void setImageScale(Texture2D selectedTexture) {
+            // Proportionen des Bildes berechnen und Plane skalieren
+            float aspectRatio = (float)selectedTexture.width / selectedTexture.height;
+            transform.localScale = new Vector3(originalScale.y * aspectRatio, originalScale.y, originalScale.z);
     }
 }
