@@ -4,53 +4,49 @@ using UnityEngine;
 
 public class RandomImageDisplay : MonoBehaviour
 {
-    public List<Texture2D> textures; // Liste von Texturen im Unity Inspector hinzufügen
-    public float maxDelaySeconds = 4f; // Maximale Zufallsverzögerung in Sekunden
-    public AudioClip[] moodAudioClips; // Array von Audiodateien für jedes Bild
+    public List<Texture2D> textures; // List of textures to be added in the Unity Inspector
+    public AudioClip[] moodAudioClips; // Array of audio clips for each image
 
-    private AudioSource audioSource; // Player AudioSource (externe Quelle)
-    private AudioSource selfAudio;   // Eigene AudioSource für das Abspielen der Clips
+    private AudioSource audioSource; // External audio source
+    private AudioSource selfAudio;   // Own AudioSource to play the clips
     private Material planeMaterial;
     private Vector3 originalScale;
-    private int currentIndex = 0; // Hält den Index des aktuellen Bildes
 
     void Start()
     {
-        // Player-GameObject mit dem Tag "Player" finden und dessen AudioSource abrufen
+        // Find the Player GameObject with the tag "Player" and get its AudioSource
         GameObject player = GameObject.FindWithTag("Player");
         if (player != null)
         {
             audioSource = player.GetComponent<AudioSource>();
             if (audioSource == null)
             {
-                Debug.LogError("Keine AudioSource auf dem Player-Objekt gefunden.");
+                Debug.LogError("No AudioSource found on the Player object.");
                 return;
             }
         }
         else
         {
-            Debug.LogError("Kein GameObject mit dem Tag 'Player' gefunden.");
+            Debug.LogError("No GameObject with the tag 'Player' found.");
             return;
         }
 
-
         selfAudio = GetComponent<AudioSource>();
-
         planeMaterial = GetComponent<Renderer>().material;
         originalScale = transform.localScale;
 
         if (textures.Count == 0)
         {
-            Debug.LogError("Keine Texturen in der Liste. Bitte Texturen im Inspector hinzufügen.");
+            Debug.LogError("No textures in the list. Please add textures in the Inspector.");
             return;
         }
         if (moodAudioClips.Length < textures.Count)
         {
-            Debug.LogError("Nicht genügend Audiodateien für die Anzahl der Texturen. Bitte fügen Sie mehr Audiodateien hinzu.");
+            Debug.LogError("Not enough audio clips for the number of textures. Please add more audio clips.");
             return;
         }
 
-        // Starte die Überwachung des Audioclips für das Bildwechseln
+        // Start the coroutine to check when to change the image
         StartCoroutine(CheckAudioEndRoutine());
     }
 
@@ -58,38 +54,50 @@ public class RandomImageDisplay : MonoBehaviour
     {
         while (true)
         {
-            // Warte, bis das Audio des Players anfängt zu spielen
+            // Wait until the player's audio starts playing
             yield return new WaitUntil(() => audioSource.isPlaying);
 
-            // Warte, bis das Audio des Players zu Ende ist
+            // Wait until the player's audio stops playing
             yield return new WaitWhile(() => audioSource.isPlaying);
 
-            // Zufällige Verzögerung zwischen 0 und maxDelaySeconds
-            float randomDelay = Random.Range(0, maxDelaySeconds);
+            // Random delay between 20 and 60 seconds
+            float randomDelay = Random.Range(2f, 10f);
             yield return new WaitForSeconds(randomDelay);
 
-            // Nächstes Bild auswählen
-            currentIndex = (currentIndex + 1) % textures.Count;
-            Texture2D selectedTexture = textures[currentIndex];
-
-            // Bild auf Material anwenden
-            planeMaterial.SetTexture("_MainTex", selectedTexture); // für Albedo/Base Map
-            planeMaterial.SetTexture("_BaseMap", selectedTexture); // Alternative für URP/HDRP Shader
-
-            setImageScale(selectedTexture);
-
-            // Abspielen des zugehörigen Audio-Clips
-            if (selfAudio != null && moodAudioClips.Length > currentIndex)
+            // Randomly decide to show an image or not
+            if (Random.value > 0.5f) // 50% chance to display an image
             {
-                selfAudio.clip = moodAudioClips[currentIndex];
-                selfAudio.Play();
+                // Select a random image from the list
+                int randomIndex = Random.Range(0, textures.Count);
+                Texture2D selectedTexture = textures[randomIndex];
+
+                // Apply the image to the material
+                planeMaterial.SetTexture("_MainTex", selectedTexture); // for Albedo/Base Map
+                planeMaterial.SetTexture("_BaseMap", selectedTexture); // Alternative for URP/HDRP Shader
+
+                // Adjust the scale of the plane to match the texture's aspect ratio
+                setImageScale(selectedTexture);
+
+                // Play the corresponding audio clip
+                if (selfAudio != null && moodAudioClips.Length > randomIndex)
+                {
+                    selfAudio.clip = moodAudioClips[randomIndex];
+                    selfAudio.Play();
+                }
+            }
+            else
+            {
+                // Clear the texture to show no image
+                planeMaterial.SetTexture("_MainTex", null);
+                planeMaterial.SetTexture("_BaseMap", null);
             }
         }
     }
 
-    void setImageScale(Texture2D selectedTexture) {
-            // Proportionen des Bildes berechnen und Plane skalieren
-            float aspectRatio = (float)selectedTexture.width / selectedTexture.height;
-            transform.localScale = new Vector3(originalScale.y * aspectRatio, originalScale.y, originalScale.z);
+    void setImageScale(Texture2D selectedTexture)
+    {
+        // Calculate aspect ratio and scale the plane accordingly
+        float aspectRatio = (float)selectedTexture.width / selectedTexture.height;
+        transform.localScale = new Vector3(originalScale.y * aspectRatio, originalScale.y, originalScale.z);
     }
 }
